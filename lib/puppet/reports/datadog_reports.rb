@@ -56,6 +56,8 @@ Puppet::Reports.register_report(:datadog_reports) do
         @msg_host = m[:hostname]
       end
     end
+    @msg_environment = self.environment
+    @noop = self.noop
 
     event_title = ''
     alert_type = ''
@@ -69,16 +71,20 @@ Puppet::Reports.register_report(:datadog_reports) do
         event_title = "Puppet failed on #{@msg_host}"
         alert_type = "error"
         event_priority = "normal"
+        check_status = 2
       elsif @status == 'changed'
         event_title = "Puppet changed resources on #{@msg_host}"
         alert_type = "success"
         event_priority = "normal"
+        check_status = 0
       elsif @status == "unchanged"
         event_title = "Puppet ran on, and left #{@msg_host} unchanged"
         alert_type = "success"
+        check_status = 0
       else
         event_title = "Puppet ran on #{@msg_host}"
         alert_type = "success"
+        check_status = 0
       end
 
     else
@@ -108,6 +114,18 @@ Puppet::Reports.register_report(:datadog_reports) do
       event_data << "\nThe resources that failed are:\n@@@\n"
       failed_resources.each {|s| event_data << "#{s.title} in #{s.file}:#{s.line}\n" }
       event_data << "\n@@@\n"
+      check_status = 2
+    else
+      check_status = 0
+    end
+
+    # Check for a running environment other than production when not running in noop mode
+    if @msg_environment != 'production' && @noop == false
+      environment_check_status = 2
+      environment_check_message = "#{@msg_host} is configured to use environment #{@msg_environment} rather than production"
+    else
+      environment_check_status = 0
+      environment_check_message = "#{@msg_host} is configured to use environment production"
     end
 
     Puppet.debug "Sending metrics for #{@msg_host} to Datadog"
@@ -131,5 +149,11 @@ Puppet::Reports.register_report(:datadog_reports) do
                                       :priority => event_priority,
                                       :source_type_name => 'puppet'
                                       ), :host => @msg_host)
+
+    Puppet.debug "Sending puppet.status service check for #{@msg_host} to Datadog"
+    @dog.service_check('puppet.status', @msg_host, check_status, message: event_data)
+
+    Puppet.debug "Sending puppet.environment service check for #{@msg_host} to Datadog"
+    @dog.service_check('puppet.environment', @msg_host, environment_check_status, message: environment_check_message)
   end
 end
