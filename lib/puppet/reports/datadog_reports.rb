@@ -134,7 +134,7 @@ Puppet::Reports.register_report(:datadog_reports) do
         environment_check_message = "#{@msg_host} is configured to use environment production"
       else
         environment_check_status = 2
-        environment_check_message = "#{@msg_host} is using environment #{@msg_environment} rather than one of:\n#{CHECK_ENVIRONMENTS}"
+        environment_check_message = "#{@msg_host} is using environment #{@msg_environment} rather than one of:\n#{CHECK_ENVIRONMENTS.join(', ')}"
       end
     else
       # Set to unknown status because we don't know if the environment is a valid one or not
