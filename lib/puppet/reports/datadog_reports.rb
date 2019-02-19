@@ -122,7 +122,6 @@ Puppet::Reports.register_report(:datadog_reports) do
       event_data << "\nThe resources that failed are:\n@@@\n"
       failed_resources.each {|s| event_data << "#{s.title} in #{s.file}:#{s.line}\n" }
       event_data << "\n@@@\n"
-      check_status = 2
     else
       check_status = 0
     end
