@@ -15,6 +15,14 @@ Puppet::Reports.register_report(:datadog_reports) do
   API_KEY = config[:datadog_api_key]
   API_URL = config[:api_url]
 
+  unless config[:check_environments].nil?
+    if config[:check_environments].is_a? Array
+      CHECK_ENVIRONMENTS = config[:check_environments]
+    else
+      raise(Puppet::ParseError, "Invalid parameter check_environments. Must be an Array. Got #{config[:check_environments].class} instead")
+    end
+  end
+
   # if need be initialize the regex
   if !config[:hostname_extraction_regex].nil?
     begin
@@ -119,13 +127,19 @@ Puppet::Reports.register_report(:datadog_reports) do
       check_status = 0
     end
 
-    # Check for a running environment other than production when not running in noop mode
-    if @msg_environment != 'production' && @noop == false
-      environment_check_status = 2
-      environment_check_message = "#{@msg_host} is configured to use environment #{@msg_environment} rather than production"
+    # Check for a running environment other than what is defined for check_environments in parameters
+    if CHECK_ENVIRONMENTS
+      if @msg_environment != 'production' && @noop == false
+        environment_check_status = 2
+        environment_check_message = "#{@msg_host} is configured to use environment #{@msg_environment} rather than production"
+      else
+        environment_check_status = 0
+        environment_check_message = "#{@msg_host} is configured to use environment production"
+      end
     else
-      environment_check_status = 0
-      environment_check_message = "#{@msg_host} is configured to use environment production"
+      # Set to unknown status because we don't know if the environment is a valid one or not
+      environment_check_status = 3
+      environment_check_message = "Environment check not configured for #{@msg_host}. To enable, configure check_environments parameter"
     end
 
     Puppet.debug "Sending metrics for #{@msg_host} to Datadog"

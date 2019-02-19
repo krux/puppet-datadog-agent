@@ -19,6 +19,7 @@ class datadog_agent::reports(
   $dogapi_version,
   $hostname_extraction_regex = undef,
   $datadog_site = 'datadoghq.com',
+  $check_environments,
 ) {
 
   include datadog_agent

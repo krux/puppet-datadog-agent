@@ -7,6 +7,7 @@ describe 'datadog_agent::reports' do
         api_key: 'notanapikey',
         puppetmaster_user: 'puppet',
         dogapi_version: 'installed',
+        check_environments: ['production']
       }
     end
     let(:conf_file) { '/etc/datadog-agent/datadog-reports.yaml' }
@@ -53,6 +54,9 @@ describe 'datadog_agent::reports' do
 
         it { should contain_file(conf_file).without_content(/hostname_extraction_regex:/) }
 
+        it { should contain_file(conf_file).with_content(/check_environments:/) }
+
+        it { should contain_file(conf_file).with_content(/- production/) }
       end
     end
   end
@@ -61,7 +65,8 @@ describe 'datadog_agent::reports' do
       {
         api_key: 'notanapikey',
         puppetmaster_user: 'puppet',
-        dogapi_version: '1.2.2'
+        dogapi_version: '1.2.2',
+        check_environments: ['production']
       }
     end
     let(:conf_file) { '/etc/datadog-agent/datadog-reports.yaml' }
@@ -106,6 +111,7 @@ describe 'datadog_agent::reports' do
         puppetmaster_user: 'puppet',
         dogapi_version: 'installed',
         datadog_site: 'datadoghq.eu',
+        check_environments: ['production'],
       }
     end
     let(:conf_file) { '/etc/datadog-agent/datadog-reports.yaml' }
@@ -133,7 +139,7 @@ describe 'datadog_agent::reports' do
         should contain_file(conf_file)\
           .with_owner('puppet')\
           .with_group('root')\
-          .with_content(/:api_url: api.datadoghq.eu/)
+          .with_content(/:api_url: https:\/\/api.datadoghq.eu/)
       end
       it { should contain_file(conf_file).without_content(/hostname_extraction_regex:/)  }
     end

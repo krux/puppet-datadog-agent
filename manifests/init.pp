@@ -311,6 +311,7 @@ class datadog_agent(
   $apt_release = $datadog_agent::params::apt_default_release,
   Optional[String] $service_provider = undef,
   Optional[String] $agent_version = $datadog_agent::params::agent_version,
+  Array[String] $check_environments = ['production'],
 ) inherits datadog_agent::params {
 
   # Allow ports to be passed as integers or strings.
@@ -674,6 +675,7 @@ class datadog_agent(
   if $puppet_run_reports {
     class { 'datadog_agent::reports':
       api_key                   => $api_key,
+      check_environments        => $check_environments,
       datadog_site              => $datadog_site,
       dogapi_version            => $datadog_agent::params::dogapi_version,
       puppetmaster_user         => $puppetmaster_user,
