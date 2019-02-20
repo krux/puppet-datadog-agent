@@ -44,12 +44,12 @@ describe 'datadog_agent::integrations::kafka' do
             {
               'host' => 'localhost',
               'port' => '9997',
-              'tags' => %w{ kafka:broker tag1:value1 },
+              'tags' => { 'kafka' => 'broker', 'tag1' => 'value1' },
             }
           ]
         }}
 
-        it { should contain_file(conf_file).with_content(%r{host: localhost\s+port: 9997\s+tags:\s+- kafka:broker\s+- tag1:value1}) }
+        it { should contain_file(conf_file).with_content(%r{host: localhost\s+port: 9997\s+tags:\s+kafka: broker\s+tag1: value1}) }
       end
 
       context 'with two kafka brokers' do
@@ -58,18 +58,18 @@ describe 'datadog_agent::integrations::kafka' do
             {
               'host' => 'localhost',
               'port' => '9997',
-              'tags' => %w{ kafka:broker tag1:value1 },
+              'tags' => { 'kafka' => 'broker', 'tag1' => 'value1' },
             },
             {
               'host' => 'remotehost',
               'port' => '9998',
-              'tags' => %w{ kafka:remote tag2:value2 },
+              'tags' => { 'kafka' => 'remote', 'tag2' => 'value2' },
             }
           ]
         }}
 
-        it { should contain_file(conf_file).with_content(%r{host: localhost\s+port: 9997\s+tags:\s+- kafka:broker\s+- tag1:value1}) }
-        it { should contain_file(conf_file).with_content(%r{host: remotehost\s+port: 9998\s+tags:\s+- kafka:remote\s+- tag2:value2}) }
+        it { should contain_file(conf_file).with_content(%r{host: localhost\s+port: 9997\s+tags:\s+kafka: broker\s+tag1: value1}) }
+        it { should contain_file(conf_file).with_content(%r{host: remotehost\s+port: 9998\s+tags:\s+kafka: remote\s+tag2: value2}) }
 
       end
 
@@ -79,7 +79,7 @@ describe 'datadog_agent::integrations::kafka' do
             {
               'host' => 'localhost',
               'port' => '9997',
-              'tags' => %w{ kafka:broker tag1:value1 },
+              'tags' => { 'kafka' => 'broker', 'tag1' => 'value1' },
               'username' => 'username',
               'password' => 'password',
               'process_name_regex' => 'regex',
@@ -92,7 +92,7 @@ describe 'datadog_agent::integrations::kafka' do
           ]
         }}
 
-        it { should contain_file(conf_file).with_content(%r{host: localhost\s+port: 9997\s+tags:\s+- kafka:broker\s+- tag1:value1\s+user: username\s+password: password\s+process_name_regex: regex\s+tools_jar_path: tools.jar\s+name: kafka_instance\s+java_bin_path: /path/to/java\s+trust_store_path: /path/to/trustStore.jks\s+trust_store_password: password}) }
+        it { should contain_file(conf_file).with_content(%r{host: localhost\s+port: 9997\s+tags:\s+kafka: broker\s+tag1: value1\s+user: username\s+password: password\s+process_name_regex: regex\s+tools_jar_path: tools.jar\s+name: kafka_instance\s+java_bin_path: /path/to/java\s+trust_store_path: /path/to/trustStore.jks\s+trust_store_password: password}) }
       end
     end
   end

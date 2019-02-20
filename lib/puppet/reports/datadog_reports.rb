@@ -15,6 +15,14 @@ Puppet::Reports.register_report(:datadog_reports) do
   API_KEY = config[:datadog_api_key]
   API_URL = config[:api_url]
 
+  unless config[:check_environments].nil?
+    if config[:check_environments].is_a? Array
+      CHECK_ENVIRONMENTS = config[:check_environments]
+    else
+      raise(Puppet::ParseError, "Invalid parameter check_environments. Must be an Array. Got #{config[:check_environments].class} instead")
+    end
+  end
+
   # if need be initialize the regex
   if !config[:hostname_extraction_regex].nil?
     begin
@@ -56,6 +64,8 @@ Puppet::Reports.register_report(:datadog_reports) do
         @msg_host = m[:hostname]
       end
     end
+    @msg_environment = self.environment
+    @noop = self.noop
 
     event_title = ''
     alert_type = ''
@@ -69,16 +79,20 @@ Puppet::Reports.register_report(:datadog_reports) do
         event_title = "Puppet failed on #{@msg_host}"
         alert_type = "error"
         event_priority = "normal"
+        check_status = 2
       elsif @status == 'changed'
         event_title = "Puppet changed resources on #{@msg_host}"
         alert_type = "success"
         event_priority = "normal"
+        check_status = 0
       elsif @status == "unchanged"
         event_title = "Puppet ran on, and left #{@msg_host} unchanged"
         alert_type = "success"
+        check_status = 0
       else
         event_title = "Puppet ran on #{@msg_host}"
         alert_type = "success"
+        check_status = 0
       end
 
     else
@@ -110,6 +124,21 @@ Puppet::Reports.register_report(:datadog_reports) do
       event_data << "\n@@@\n"
     end
 
+    # Check for a running environment other than what is defined for check_environments in parameters
+    if CHECK_ENVIRONMENTS
+      if CHECK_ENVIRONMENTS.include?(@msg_environment) && @noop == false
+        environment_check_status = 0
+        environment_check_message = "#{@msg_host} is configured to use environment #{@msg_environment}"
+      else
+        environment_check_status = 2
+        environment_check_message = "#{@msg_host} is using environment #{@msg_environment} rather than one of:\n#{CHECK_ENVIRONMENTS.join(', ')}"
+      end
+    else
+      # Set to unknown status because we don't know if the environment is a valid one or not
+      environment_check_status = 3
+      environment_check_message = "Environment check not configured for #{@msg_host}. To enable, configure check_environments parameter"
+    end
+
     Puppet.debug "Sending metrics for #{@msg_host} to Datadog"
     @dog = Dogapi::Client.new(API_KEY, nil, nil, nil, nil, nil, API_URL)
     @dog.batch_metrics do
@@ -131,5 +160,11 @@ Puppet::Reports.register_report(:datadog_reports) do
                                       :priority => event_priority,
                                       :source_type_name => 'puppet'
                                       ), :host => @msg_host)
+
+    Puppet.debug "Sending puppet.status service check for #{@msg_host} to Datadog"
+    @dog.service_check('puppet.status', @msg_host, check_status, message: event_data)
+
+    Puppet.debug "Sending puppet.environment service check for #{@msg_host} to Datadog"
+    @dog.service_check('puppet.environment', @msg_host, environment_check_status, message: environment_check_message)
   end
 end
