@@ -151,6 +151,10 @@ Puppet::Reports.register_report(:datadog_reports) do
       }
     end
 
+    environment_tag = "puppet.environment:#{@msg_environment}"
+    Puppet.debug "Tagging #{@msg_host} with '#{@environment_tag}'"
+    @dog.add_tags(@msg_host, [environment_tag])
+
     Puppet.debug "Sending events for #{@msg_host} to Datadog"
     @dog.emit_event(Dogapi::Event.new(event_data,
                                       :msg_title => event_title,
