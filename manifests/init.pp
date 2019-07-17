@@ -292,6 +292,8 @@ class datadog_agent(
   $service_name = $datadog_agent::params::service_name,
   $package_name = $datadog_agent::params::package_name,
   $dd_user = $datadog_agent::params::dd_user,
+  $dd_user_homedir = $datadog_agent::params::dd_user_homedir,
+  $dd_user_shell = $datadog_agent::params::dd_user_shell,
   $dd_group = $datadog_agent::params::dd_group,
   $dd_groups = $datadog_agent::params::dd_groups,
   $apm_enabled = $datadog_agent::params::apm_default_enabled,
@@ -476,8 +478,19 @@ class datadog_agent(
   }
 
   if ($dd_groups) {
+    # If the home directory is updated, need to stop the service first
+    exec { 'stop_agent_for_user_home_update':
+      command  => 'pgrep -f /opt/datadog-agent/bin/agent/agent && datadog-agent stop',
+      unless   => "grep ${dd_user} /etc/passwd | grep \"${dd_user_homedir}\"",
+      provider => 'shell',
+      before   => User[$dd_user],
+      notify   => Service[$datadog_agent::params::service_name],
+    }
+
     user { $dd_user:
       groups => $dd_groups,
+      home   => $dd_user_homedir,
+      shell  => $dd_user_shell,
       notify => Service[$datadog_agent::params::service_name],
     }
   }
