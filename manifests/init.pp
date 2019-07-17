@@ -293,6 +293,7 @@ class datadog_agent(
   $package_name = $datadog_agent::params::package_name,
   $dd_user = $datadog_agent::params::dd_user,
   $dd_user_homedir = $datadog_agent::params::dd_user_homedir,
+  $dd_user_shell = $datadog_agent::params::dd_user_shell,
   $dd_group = $datadog_agent::params::dd_group,
   $dd_groups = $datadog_agent::params::dd_groups,
   $apm_enabled = $datadog_agent::params::apm_default_enabled,
@@ -489,6 +490,7 @@ class datadog_agent(
     user { $dd_user:
       groups => $dd_groups,
       home   => $dd_user_homedir,
+      shell  => $dd_user_shell,
       notify => Service[$datadog_agent::params::service_name],
     }
   }

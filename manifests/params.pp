@@ -17,6 +17,7 @@ class datadog_agent::params {
   $conf6_dir                      = '/etc/datadog-agent/conf.d'
   $dd_user                        = 'dd-agent'
   $dd_user_homedir                = '/opt/datadog-agent'
+  $dd_user_shell                  = '/bin/bash'
   $dd_group                       = 'root'
   $dd_groups                      = undef
   $package_name                   = 'datadog-agent'
