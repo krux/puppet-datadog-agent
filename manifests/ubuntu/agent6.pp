@@ -30,11 +30,11 @@ class datadog_agent::ubuntu::agent6(
     $key = {}
   }
 
-  apt::source { 'datadog':
-    ensure => absent,
-  }
-
   if $manage_repo {
+    apt::source { 'datadog':
+      ensure => absent,
+    }
+
     $dd_package_requires = [Apt::Source['datadog6'], Class['apt::update']]
     apt::source { 'datadog6':
       comment  => 'Datadog Agent 6 Repository',
