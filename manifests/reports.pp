@@ -17,9 +17,9 @@ class datadog_agent::reports(
   $api_key,
   $puppetmaster_user,
   $dogapi_version,
+  $check_environments,
   $hostname_extraction_regex = undef,
   $datadog_site = 'datadoghq.com',
-  $check_environments,
 ) {
 
   include datadog_agent

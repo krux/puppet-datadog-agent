@@ -9,6 +9,7 @@ class datadog_agent::ubuntu::agent6(
   String $location = $datadog_agent::params::agent6_default_repo,
   String $release = $datadog_agent::params::apt_default_release,
   String $repos = '6',
+  Boolean $manage_repo = true,
   Boolean $skip_apt_key_trusting = false,
   String $service_ensure = 'running',
   Boolean $service_enable = true,
@@ -29,17 +30,22 @@ class datadog_agent::ubuntu::agent6(
     $key = {}
   }
 
-  apt::source { 'datadog':
-    ensure => absent,
-  }
+  if $manage_repo {
+    apt::source { 'datadog':
+      ensure => absent,
+    }
 
-  apt::source { 'datadog6':
-    comment  => 'Datadog Agent 6 Repository',
-    location => $location,
-    release  => $release,
-    repos    => $repos,
-    key      => $key,
-    require  => Exec['apt-transport-https'],
+    $dd_package_requires = [Apt::Source['datadog6'], Class['apt::update']]
+    apt::source { 'datadog6':
+      comment  => 'Datadog Agent 6 Repository',
+      location => $location,
+      release  => $release,
+      repos    => $repos,
+      key      => $key,
+      require  => Exec['apt-transport-https'],
+    }
+  } else {
+    $dd_package_requires = []
   }
 
   package { 'datadog-agent-base':
@@ -49,8 +55,7 @@ class datadog_agent::ubuntu::agent6(
 
   package { $datadog_agent::params::package_name:
     ensure  => $agent_version,
-    require => [Apt::Source['datadog6'],
-                Class['apt::update']],
+    require => $dd_package_requires,
   }
 
   if $service_provider {

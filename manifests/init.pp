@@ -442,6 +442,7 @@ class datadog_agent(
         }
       } else {
         class { 'datadog_agent::ubuntu::agent6':
+          manage_repo           => $manage_repo,
           agent_version         => $agent_version,
           service_ensure        => $service_ensure,
           service_enable        => $service_enable,
