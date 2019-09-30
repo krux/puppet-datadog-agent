@@ -3,9 +3,9 @@
 # This class will install the necessary config to hook the tcp_check in the agent
 #
 # Parameters:
-#   name
+#   check_name
 #       (Required) - Name of the service.
-#        This will be included as a tag: instance:<name>.
+#        This will be included as a tag: instance:<check_name>.
 #
 #   host
 #       (Required) - Host to be checked.
@@ -43,73 +43,73 @@
 # Add a class for each check instance:
 #
 # class { 'datadog_agent::integrations::tcp_check':
-#   name  => 'localhost-ftp',
+#   check_name => 'localhost-ftp',
 #   host       => 'ftp.example.com',
 #   port       => '21',
 # }
 #
 # class { 'datadog_agent::integrations::tcp_check':
-#   name  => 'localhost-ssh',
+#   check_name => 'localhost-ssh',
 #   host       => '127.0.0.1',
 #   port       => '22',
-#   threshold             => 1,
-#   window                => 1,
-#   tags     => ['production', 'ssh access'],
+#   threshold  => 1,
+#   window     => 1,
+#   tags       => ['production', 'ssh access'],
 # }
 #
 # class { 'datadog_agent::integrations::tcp_check':
-#   name  => 'localhost-web-response',
-#   host       => '127.0.0.1',
-#   port       => '80',
-#   timeout    => '8',
+#   name                  => 'localhost-web-response',
+#   host                  => '127.0.0.1',
+#   port                  => '80',
+#   timeout               => '8',
 #   threshold             => 1,
 #   window                => 1,
 #   collect_response_time => 1,
 #   skip_event            => 1,
-#   tags     => ['production', 'webserver response time'],
+#   tags                  => ['production', 'webserver response time'],
 # }
 #
 # Add multiple instances in one class declaration:
 #
 #  class { 'datadog_agent::integrations::tcp_check':
 #        instances => [{
-#          'name'  => 'www.example.com-http',
-#          'host'  => 'www.example.com',
+#          'check_name' => 'www.example.com-http',
+#          'host'       => 'www.example.com',
 #          'port'       => '80',
 #        },
 #        {
-#          'name'  => 'www.example.com-https',
-#          'host'  => 'www.example.com',
+#          'check_name' => 'www.example.com-https',
+#          'host'       => 'www.example.com',
 #          'port'       => '443',
 #        }]
 #     }
 
 
 class datadog_agent::integrations::tcp_check (
-  $check_name      = undef,
-  $host      = undef,
-  $port      = undef,
-  $timeout   = 10,
-  $threshold = undef,
-  $window    = undef,
+  $check_name            = undef,
+  $host                  = undef,
+  $port                  = undef,
+  $timeout               = 10,
+  $threshold             = undef,
+  $window                = undef,
   $collect_response_time = undef,
-  $skip_event = undef,
-  $tags      = [],
-  $instances  = undef,
+  $skip_event            = undef,
+  $tags                  = [],
+  $instances             = undef,
 ) inherits datadog_agent::params {
   include datadog_agent
 
   if !$instances and $host {
     $_instances = [{
-      'check_name'                   => $check_name,
-      'host'                         => $host,
-      'port'                         => $port,
-      'timeout'                      => $timeout,
-      'threshold'                    => $threshold,
-      'window'                       => $window,
-      'collect_response_time'        => $collect_response_time,
-      'skip_event'                   => $skip_event,
-      'tags'                         => $tags,
+      'check_name'            => $check_name,
+      'host'                  => $host,
+      'port'                  => $port,
+      'timeout'               => $timeout,
+      'threshold'             => $threshold,
+      'window'                => $window,
+      'collect_response_time' => $collect_response_time,
+      'skip_event'            => $skip_event,
+      'tags'                  => $tags,
     }]
   } elsif !$instances{
     $_instances = []
@@ -119,10 +119,20 @@ class datadog_agent::integrations::tcp_check (
 
   $legacy_dst = "${datadog_agent::conf_dir}/tcp_check.yaml"
   if !$::datadog_agent::agent5_enable {
-    $dst = "${datadog_agent::conf6_dir}/tcp_check.d/conf.yaml"
+    $dst_dir = "${datadog_agent::conf6_dir}/tcp_check.d"
     file { $legacy_dst:
       ensure => 'absent'
     }
+
+    file { $dst_dir:
+      ensure  => directory,
+      owner   => $datadog_agent::params::dd_user,
+      group   => $datadog_agent::params::dd_group,
+      mode    => $datadog_agent::params::permissions_directory,
+      require => Package[$datadog_agent::params::package_name],
+      notify  => Service[$datadog_agent::params::service_name]
+    }
+    $dst = "${dst_dir}/conf.yaml"
   } else {
     $dst = $legacy_dst
   }
@@ -131,7 +141,7 @@ class datadog_agent::integrations::tcp_check (
     ensure  => file,
     owner   => $datadog_agent::params::dd_user,
     group   => $datadog_agent::params::dd_group,
-    mode    => '0600',
+    mode    => $datadog_agent::params::permissions_protected_file,
     content => template('datadog_agent/agent-conf.d/tcp_check.yaml.erb'),
     require => Package[$datadog_agent::params::package_name],
     notify  => Service[$datadog_agent::params::service_name]

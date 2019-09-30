@@ -25,14 +25,10 @@ class datadog_agent::ubuntu::agent5(
   Optional[String] $apt_keyserver = undef,
 ) inherits datadog_agent::params{
 
-  exec { 'apt-transport-https':
-    command => '/usr/bin/apt-get install -y -q apt-transport-https'
-  }
-
   if !$skip_apt_key_trusting {
     $key = {
       'id' => $apt_key,
-      'server' => $apt_keyserver
+      'server' => $apt_keyserver,
     }
   } else {
     $key = {}
@@ -71,8 +67,8 @@ class datadog_agent::ubuntu::agent5(
     location => $location,
     release  => $release,
     repos    => $repos,
+    require  => Class['apt'],
     key      => $key,
-    require  => Exec['apt-transport-https'],
     notify   => Exec['datadog_apt-get_remove_agent6'],
   }
 

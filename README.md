@@ -1,7 +1,10 @@
 Puppet & Datadog
 ================
 
-[![Build Status](https://travis-ci.org/DataDog/puppet-datadog-agent.svg?branch=master)](https://travis-ci.org/DataDog/puppet-datadog-agent)
+[![Build Status](https://travis-ci.com/DataDog/puppet-datadog-agent.svg?branch=master)](https://travis-ci.com/DataDog/puppet-datadog-agent)
+[![Puppet Forge](https://img.shields.io/puppetforge/v/datadog/datadog_agent.svg)](https://forge.puppetlabs.com/datadog/datadog_agent)
+[![Puppet Forge Downloads](https://img.shields.io/puppetforge/dt/datadog/datadog_agent.svg)](https://forge.puppetlabs.com/datadog/datadog_agent)
+
 
 Description
 -----------
@@ -14,11 +17,9 @@ A module to:
 Releases
 --------
 
-There are currently two actively maintained versions for the Puppet module. For users on Puppet >= 4.6.x, and possibly some older 4.x puppets, it is recommended to use version 2.0+ of the module.
+The current version of this Puppet module is compatible with Puppet >= 4.6.x. For users running on older versions of Puppet the legacy module, series 1.x, should support most use-cases.
 
-For users running on older versions of Puppet the legacy module, series 1.x, should support most use-cases. 
-
-The majority of users should be able to use the newer module as many of the Puppet versions supported in the 1.x series of the module have been EOL'd.
+The majority of users should be able to use the current version, as the Puppet versions supported in the 1.x series of the module have been EOL'd.
 
 Some features might be back-ported if there's enough demand, but in general only maintenance is performed on the 1.x series of the module. Future feature development is performed on the newer Puppet module.
 
@@ -27,7 +28,7 @@ Version 2.x
 
 ## Requirements
 
-Puppet >=4.6.x and <=5.3.x (may work with newer versions, but is untested). For detailed information on compatibility, check the [module page][2] on the Puppet forge.
+For detailed information on compatibility, check the [module page][2] on the Puppet forge.
 
 ## Installation
 
@@ -40,8 +41,8 @@ puppet module install datadog-datadog_agent
 **Note**: For CentOS versions <7.0, specify the service provider as `upstart`:
 
 ```
-class{ 'datadog_agent': 
-    service_provider => 'upstart' 
+class{ 'datadog_agent':
+    service_provider => 'upstart'
   }
 ```
 
@@ -65,7 +66,7 @@ Version 1.x
 
 ## Requirements
 
-Puppet >=2.7.x and <=4.2.x (may work with newer versions, but is untested). For detailed information on compatibility, check the [module page][2] on the Puppet forge.
+Puppet >=2.7.x and <=4.2.x. For detailed information on compatibility, check the [module page][2] on the Puppet forge.
 
 ## Installation
 
@@ -102,20 +103,20 @@ Once the `datadog_agent` module is installed on your `puppetserver`/`puppetmaste
 
     Or assign this module using the Puppet style Parameterized class:
 
-        ```
-        class { 'datadog_agent':
-            api_key => "<YOUR_DD_API_KEY>",
-        }
-        ```
+    ```
+    class { 'datadog_agent':
+        api_key => "<YOUR_DD_API_KEY>",
+    }
+    ```
 
     On your `puppetserver`, enable reporting:
 
-        ```
-        class { 'datadog_agent':
-            api_key            => "<YOUR_DD_API_KEY>",
-            puppet_run_reports => true,
-        }
-        ```
+    ```
+    class { 'datadog_agent':
+        api_key            => "<YOUR_DD_API_KEY>",
+        puppet_run_reports => true,
+    }
+    ```
 
     - To support reporting, your Puppet master needs the [dogapi][4] gem installed. To install, either run the Puppet Agent on your master with this configuration or install it manually with `gem`. You might need to restart your `puppetserver` service for the freshly installed `dogapi-rb` gem to be picked up.
     - On version 2.x, `puppetserver_gem` is defined as a module dependency, it is installed automatically when the module is installed.
@@ -123,6 +124,7 @@ Once the `datadog_agent` module is installed on your `puppetserver`/`puppetmaste
       - If you are on Puppet Enterprise or POSS (ie. >=3.7.0), there is a soft dependency for reporting on the `puppetserver_gem` module. Install with `puppet module install puppetlabs-puppetserver_gem` - installing manually with `gem` does *not* work.
       - You may install `dogapi-rb` with `gem` as the system-level Ruby is used.
       - The gem provider is configurable by setting it to `puppetserver_gem` (set by default on PE/POSS (>=3.7.0)) or `gem` if on older versions of Puppet.
+        - For users running puppet in standalone/masterless mode you will need to set the `puppet_gem_provider` to `puppet_gem` (or `gem` depending on versions) to ensure the `dogapi-rb` is available.
 
 3. Include any other integrations you want the agent to use, for example:
 
@@ -145,6 +147,22 @@ Once the `datadog_agent` module is installed on your `puppetserver`/`puppetmaste
         },
     }
     ```
+
+Installing and pinning specific versions of integrations
+--------------------------------------------------------
+
+You can specify a given integration and version number to be installed by using `datadog_agent::install_integration`. This will use the `datadog-agent integration` command to ensure a specific integration is installed or uninstalled.
+
+```
+datadog_agent::install_integration { "mongo-1.9":
+    ensure => present,
+    integration_name => 'datadog-mongo',
+    version => '1.9.0',
+}
+```
+
+The field `ensure` can be either `present` (default) or `absent`, the later being useful to remove a previously pinned version of an integration.
+
 
 Reporting
 ---------
@@ -211,14 +229,14 @@ This is the minimal set of modifications to get started. These files assume Pupp
 /etc/puppetlabs/puppet/puppet.conf
 -----------------------
 ```ini
-    [master]
-    report = true
-    reports = datadog_reports
-    pluginsync = true
+[master]
+report = true
+reports = datadog_reports
+pluginsync = true
 
-    [agent]
-    report = true
-    pluginsync = true
+[agent]
+report = true
+pluginsync = true
 ```
 
 _Note: This may be file `/etc/puppet/puppet/puppet.conf` on older puppets_
@@ -294,12 +312,14 @@ These variables can be set in the `datadog_agent` class to control settings in t
 |-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `collect_ec2_tags`          | Set this to yes to have an instance's custom EC2 tags used as agent tags.                                                                                                                        |
 | `collect_instance_metadata` | Set this to yes to have an instance's EC2 metadata used as agent tags.                                                                                                                           |
-| `dd_url`                    | The Datadog intake server URL. You are unlikely to need to change this.                                                                                                                          |
+| `datadog_site`              | The Datadog site to report to. Defaults to `datadoghq.com`, set to `datadoghq.eu` to report to the EU site. Supported since v2.4.0 of the module, and only with Agent v6+                         |
+| `dd_url`                    | The Datadog intake server URL. You are unlikely to need to change this. Overrides `datadog_site`                                                                                     |
 | `host`                      | Overrides the node's host name.                                                                                                                                                                  |
 | `local_tags`                | An array of <KEY:VALUE> strings that are set as tags for the node.                                                                                                                               |
 | `non_local_traffic`         | Set this to allow other nodes to relay their traffic through this one.                                                                                                                           |
 | `agent5_enable`             | A boolean to install Agent v5 and override the Agent v6 default.                                                                                                                                 |
 | `apm_enabled`               | A boolean to enable the APM Agent (defaults to false).                                                                                                                                           |
+| `apm_analyzed_spans`        | A hash to add APM events for the Trace Search & Analytics tool. (defaults to undef). For example: `{ 'app\|rails.request' => 1, 'service-name\|operation-name' => 0.8 }`                         |
 | `process_enabled`           | A boolean to enable the process agent (defaults to false).                                                                                                                                       |
 | `scrub_args`                | A boolean to enable the process cmdline scrubbing (defaults to true).                                                                                                                            |
 | `custom_sensitive_words`    | An array to add more words beyond the default ones used by the scrubbing feature (defaults to []).                                                                                               |
@@ -368,3 +388,4 @@ pre-commit install
 [4]: https://github.com/DataDog/dogapi-rb
 [5]: https://app.datadoghq.com/account/settings#integrations
 [6]: https://app.datadoghq.com/event/stream
+

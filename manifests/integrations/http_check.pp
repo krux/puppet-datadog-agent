@@ -12,6 +12,13 @@
 #   timeout
 #       The (optional) timeout in seconds.
 #
+#   method
+#    	The (optional) HTTP method. This setting defaults to GET, though many
+#    	other HTTP methods are supported, including POST and PUT.
+#   data
+#       The (optional) data option. Data should be a string or an array of
+#       'key: value' pairs and will be sent in the body of the request.
+#
 #   username
 #   password
 #       If your service uses basic authentication, you can optionally
@@ -23,6 +30,11 @@
 #       alerts only if the check fails x times within the last y attempts
 #       where x is the threshold and y is the window.
 #
+#   reverse_content_match
+#       When (optional) true, reverses the behavior of the content_match option, 
+#       i.e. the HTTP check will report as DOWN if the string or expression 
+#       in content_match IS found. (default is false)
+#
 #   content_match
 #       The (optional) content_match parameter will allow the check
 #       to look for a particular string within the response. The check
@@ -33,9 +45,8 @@
 #        . ^ $ * + ? { } [ ] \ | ( )
 #
 #   include_content
-#       The (optional) collect_response_time parameter will instruct the
-#       check to create a metric 'network.http.response_time', tagged with
-#       the url, reporting the response time in seconds.
+#       When (optional) true, includes the first 200 characters of the HTTP
+#       response body in notifications. (default is false)
 #
 #   http_response_status_code
 #       The (optional) http_response_status_code parameter will instruct the check
@@ -57,6 +68,10 @@
 #       the http client to accept self signed, expired and otherwise
 #       problematic SSL server certificates. To maintain backwards
 #       compatibility this defaults to false.
+#
+#   ignore_ssl_warning
+#       When SSL certificate validation is enabled (see setting above), this
+#       setting will allow you to disable security warnings.
 #
 #   skip_event
 #       The (optional) skip_event parameter will instruct the check to not
@@ -82,10 +97,10 @@
 #       service check regardless of the value of disable_ssl_validation
 #
 #   headers
-#       The (optional) headers parameter allows you to send extra headers
-#       with the request. This is useful for explicitly specifying the host
-#       header or perhaps adding headers for authorisation purposes. Note
-#       that the http client library converts all headers to lowercase.
+#       The (optional) headers parameter allows you to send extra headers with
+#       the request. Specify them like 'header-name: content'. This is useful for
+#       explicitly specifying the 'host' header or for authorisation purposes.
+#       Note that the http client library converts all headers to lowercase.
 #       This is legal according to RFC2616
 #       (See: http://tools.ietf.org/html/rfc2616#section-4.2)
 #       but may be problematic with some HTTP servers
@@ -154,13 +169,17 @@ class datadog_agent::integrations::http_check (
   $username  = undef,
   $password  = undef,
   $timeout   = 1,
+  $method    = 'get',
+  $data      = undef,
   $threshold = undef,
   $window    = undef,
   $content_match = undef,
+  $reverse_content_match = false,
   $include_content = false,
   $http_response_status_code = undef,
   $collect_response_time = true,
   $disable_ssl_validation = false,
+  $ignore_ssl_warning = false,
   $skip_event = true,
   $no_proxy  = false,
   $check_certificate_expiration = true,
@@ -182,13 +201,17 @@ class datadog_agent::integrations::http_check (
       'username'                     => $username,
       'password'                     => $password,
       'timeout'                      => $timeout,
+      'method'                       => $method,
+      'data'                         => $data,
       'threshold'                    => $threshold,
       'window'                       => $window,
       'content_match'                => $content_match,
+      'reverse_content_match'        => $reverse_content_match,
       'include_content'              => $include_content,
       'http_response_status_code'    => $http_response_status_code,
       'collect_response_time'        => $collect_response_time,
       'disable_ssl_validation'       => $disable_ssl_validation,
+      'ignore_ssl_warning'           => $ignore_ssl_warning,
       'skip_event'                   => $skip_event,
       'no_proxy'                     => $no_proxy,
       'check_certificate_expiration' => $check_certificate_expiration,
@@ -208,10 +231,20 @@ class datadog_agent::integrations::http_check (
 
   $legacy_dst = "${datadog_agent::conf_dir}/http_check.yaml"
   if !$::datadog_agent::agent5_enable {
-    $dst = "${datadog_agent::conf6_dir}/http_check.d/conf.yaml"
+    $dst_dir = "${datadog_agent::conf6_dir}/http_check.d"
     file { $legacy_dst:
       ensure => 'absent'
     }
+
+    file { $dst_dir:
+      ensure  => directory,
+      owner   => $datadog_agent::params::dd_user,
+      group   => $datadog_agent::params::dd_group,
+      mode    => $datadog_agent::params::permissions_directory,
+      require => Package[$datadog_agent::params::package_name],
+      notify  => Service[$datadog_agent::params::service_name]
+    }
+    $dst = "${dst_dir}/conf.yaml"
   } else {
     $dst = $legacy_dst
   }
@@ -220,7 +253,7 @@ class datadog_agent::integrations::http_check (
     ensure  => file,
     owner   => $datadog_agent::params::dd_user,
     group   => $datadog_agent::params::dd_group,
-    mode    => '0600',
+    mode    => $datadog_agent::params::permissions_protected_file,
     content => template('datadog_agent/agent-conf.d/http_check.yaml.erb'),
     require => Package[$datadog_agent::params::package_name],
     notify  => Service[$datadog_agent::params::service_name]

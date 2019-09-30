@@ -17,14 +17,10 @@ class datadog_agent::ubuntu::agent6(
   Optional[String] $apt_keyserver = undef,
 ) inherits datadog_agent::params {
 
-  exec { 'apt-transport-https':
-    command => '/usr/bin/apt-get install -y -q apt-transport-https'
-  }
-
   if !$skip_apt_key_trusting {
     $key = {
       'id' => $apt_key,
-      'server' => $apt_keyserver
+      'server' => $apt_keyserver,
     }
   } else {
     $key = {}
@@ -46,11 +42,19 @@ class datadog_agent::ubuntu::agent6(
     }
   } else {
     $dd_package_requires = []
+    apt::source { 'datadog6':
+      comment  => 'Datadog Agent 6 Repository',
+      location => $location,
+      release  => $release,
+      repos    => $repos,
+      require  => Class['apt'],
+      key      => $key,
+    }
   }
 
   package { 'datadog-agent-base':
     ensure => absent,
-    before => Package['datadog-agent'],
+    before => Package[$datadog_agent::params::package_name],
   }
 
   package { $datadog_agent::params::package_name:
@@ -65,7 +69,7 @@ class datadog_agent::ubuntu::agent6(
       provider  => $service_provider,
       hasstatus => false,
       pattern   => 'dd-agent',
-      require   => Package['datadog-agent'],
+      require   => Package[$datadog_agent::params::package_name],
     }
   } else {
     service { $datadog_agent::params::service_name:
@@ -73,7 +77,7 @@ class datadog_agent::ubuntu::agent6(
       enable    => $service_enable,
       hasstatus => false,
       pattern   => 'dd-agent',
-      require   => Package['datadog-agent'],
+      require   => Package[$datadog_agent::params::package_name],
     }
   }
 }

@@ -43,10 +43,20 @@ class datadog_agent::integrations::twemproxy(
 
   $legacy_dst = "${datadog_agent::conf_dir}/twemproxy.yaml"
   if !$::datadog_agent::agent5_enable {
-    $dst = "${datadog_agent::conf6_dir}/twemproxy.d/conf.yaml"
+    $dst_dir = "${datadog_agent::conf6_dir}/twemproxy.d"
     file { $legacy_dst:
       ensure => 'absent'
     }
+
+    file { $dst_dir:
+      ensure  => directory,
+      owner   => $datadog_agent::params::dd_user,
+      group   => $datadog_agent::params::dd_group,
+      mode    => $datadog_agent::params::permissions_directory,
+      require => Package[$datadog_agent::params::package_name],
+      notify  => Service[$datadog_agent::params::service_name]
+    }
+    $dst = "${dst_dir}/conf.yaml"
   } else {
     $dst = $legacy_dst
   }
@@ -55,7 +65,7 @@ class datadog_agent::integrations::twemproxy(
     ensure  => file,
     owner   => $datadog_agent::params::dd_user,
     group   => $datadog_agent::params::dd_group,
-    mode    => '0600',
+    mode    => $datadog_agent::params::permissions_protected_file,
     content => template('datadog_agent/agent-conf.d/twemproxy.yaml.erb'),
     require => Package[$datadog_agent::params::package_name],
     notify  => Service[$datadog_agent::params::service_name]

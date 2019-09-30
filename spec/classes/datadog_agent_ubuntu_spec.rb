@@ -1,6 +1,11 @@
 require 'spec_helper'
 
 describe 'datadog_agent::ubuntu::agent5' do
+
+  if RSpec::Support::OS.windows?
+    return
+  end
+
   let(:facts) do
     {
       osfamily: 'debian',
@@ -29,7 +34,7 @@ describe 'datadog_agent::ubuntu::agent5' do
         .with_server('hkp://pool.sks-keyservers.net:80')
     end
   end
-  
+
   it do
     should contain_file('/etc/apt/sources.list.d/datadog.list')\
       .that_notifies('exec[apt_update]')
@@ -37,10 +42,6 @@ describe 'datadog_agent::ubuntu::agent5' do
   it { should contain_exec('apt_update') }
 
   # it should install the packages
-  it do
-    should contain_exec('apt-transport-https')\
-      .that_comes_before('file[/etc/apt/sources.list.d/datadog.list]')
-  end
   it do
     should contain_package('datadog-agent-base')\
       .with_ensure('absent')\
@@ -91,6 +92,7 @@ describe 'datadog_agent::ubuntu::agent6' do
   end
 
   # it should install the mirror
+  it { should_not contain_apt__key('Add key: 935F5A436A5A6E8788F0765B226AE980C7A7DA52 from Apt::Source datadog6') }
   it { should contain_apt__key('Add key: A2923DFF56EDA6E76E55E492D3A80E30382E94DE from Apt::Source datadog6') }
 
   it do
@@ -100,10 +102,6 @@ describe 'datadog_agent::ubuntu::agent6' do
   it { should contain_exec('apt_update') }
 
   # it should install the packages
-  it do
-    should contain_exec('apt-transport-https')\
-      .that_comes_before('file[/etc/apt/sources.list.d/datadog6.list]')
-  end
   it do
     should contain_package('datadog-agent-base')\
       .with_ensure('absent')\

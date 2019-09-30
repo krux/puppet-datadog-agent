@@ -9,6 +9,17 @@ instances:
 <% if instance['timeout'] -%>
     timeout: <%= instance['timeout'] %>
 <% end -%>
+<% if instance['method'] -%>
+    method: <%= instance['method'] %>
+<% end -%>
+<% if instance['data'].is_a?(String) -%>
+    data: <%= instance['data'] %>
+<% elsif instance['data'].is_a?(Array) -%>
+    data:
+    <%- instance['data'].each do |data| -%>
+      <%= data %>
+    <%- end -%>
+<% end -%>
 <% if instance['username'] -%>
     username: <%= instance['username'] %>
 <% end -%>
@@ -20,6 +31,9 @@ instances:
 <% end -%>
 <% if instance['window'] -%>
     window: <%= instance['window'] %>
+<% end -%>
+<% if instance['reverse_content_match'] -%>
+    reverse_content_match: <%= instance["reverse_content_match"] %>
 <% end -%>
 <% if instance['content_match'] -%>
     content_match: '<%= instance["content_match"] %>'
@@ -35,6 +49,9 @@ instances:
 <% end -%>
 <% unless instance['disable_ssl_validation'].nil? -%>
     disable_ssl_validation: <%= instance['disable_ssl_validation'] %>
+<% end -%>
+<% unless instance['ignore_ssl_warning'].nil? -%>
+    ignore_ssl_warning: <%= instance['ignore_ssl_warning'] %>
 <% end -%>
 <% unless instance['skip_event'].nil? -%>
     skip_event: <%= instance['skip_event'] %>

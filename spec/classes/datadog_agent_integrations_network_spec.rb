@@ -1,22 +1,22 @@
 require 'spec_helper'
 
-describe 'datadog_agent::integrations::fluentd' do
+describe 'datadog_agent::integrations::network' do
   context 'supported agents' do
     ALL_SUPPORTED_AGENTS.each do |_, is_agent5|
       let(:pre_condition) { "class {'::datadog_agent': agent5_enable => #{is_agent5}}" }
       if is_agent5
-        let(:conf_file) { "/etc/dd-agent/conf.d/fluentd.yaml" }
+        let(:conf_file) { "/etc/dd-agent/conf.d/network.yaml" }
       else
-        let(:conf_file) { "#{CONF_DIR6}/fluentd.d/conf.yaml" }
+        let(:conf_file) { "#{CONF_DIR6}/network.d/conf.yaml" }
       end
 
       context 'with default parameters' do
         it { should compile }
       end
 
-      context 'with monitor_agent_url set' do
+      context 'with collect_connection_state set' do
         let(:params) {{
-          monitor_agent_url: 'foobar',
+          collect_connection_state: true,
         }}
 
         it { should compile.with_all_deps }
@@ -28,24 +28,14 @@ describe 'datadog_agent::integrations::fluentd' do
         it { should contain_file(conf_file).that_requires("Package[#{PACKAGE_NAME}]") }
         it { should contain_file(conf_file).that_notifies("Service[#{SERVICE_NAME}]") }
 
-        it { should contain_file(conf_file).with_content(%r{monitor_agent_url: foobar}) }
+        it { should contain_file(conf_file).with_content(%r{collect_connection_state: true}) }
         it { should contain_file(conf_file).without_content(%r{tags: }) }
 
-        context 'with plugin_ids parameter array' do
+        context 'with excluded_interfaces parameter array' do
           let(:params) {{
-            monitor_agent_url: 'foobar',
-            plugin_ids: %w{ foo bar baz },
+            excluded_interfaces: %w{ lo lo0 eth0 },
           }}
-          it { should contain_file(conf_file).with_content(/plugin_ids:[^-]+- foo\s+- bar\s+- baz\s*?[^-]/m) }
-        end
-
-        context 'plugin_ids not array' do
-          let(:params) {{
-            monitor_agent_url: 'foobar',
-            plugin_ids: 'aoeu',
-          }}
-
-          it { should_not compile }
+          it { should contain_file(conf_file).with_content(/excluded_interfaces:[^-]+- lo\s+- lo0\s+- eth0\s*?[^-]/m) }
         end
       end
     end

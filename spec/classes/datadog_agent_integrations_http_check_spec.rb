@@ -1,36 +1,23 @@
 require 'spec_helper'
 
 describe 'datadog_agent::integrations::http_check' do
-  context 'supported agents - v5 and v6' do
-    agents = { '5' => true, '6' => false }
-    agents.each do |_, enabled|
-      let(:pre_condition) { "class {'::datadog_agent': agent5_enable => #{enabled}}" }
-      let(:facts) {{
-        operatingsystem: 'Ubuntu',
-      }}
-      if enabled
-        let(:conf_dir) { '/etc/dd-agent/conf.d' }
+  context 'supported agents' do
+    ALL_SUPPORTED_AGENTS.each do |_, is_agent5|
+      let(:pre_condition) { "class {'::datadog_agent': agent5_enable => #{is_agent5}}" }
+      if is_agent5
+        let(:conf_file) { "/etc/dd-agent/conf.d/http_check.yaml" }
       else
-        let(:conf_dir) { '/etc/datadog-agent/conf.d' }
-      end
-      let(:dd_user) { 'dd-agent' }
-      let(:dd_group) { 'root' }
-      let(:dd_package) { 'datadog-agent' }
-      let(:dd_service) { 'datadog-agent' }
-      if enabled
-        let(:conf_file) { "#{conf_dir}/http_check.yaml" }
-      else
-        let(:conf_file) { "#{conf_dir}/http_check.d/conf.yaml" }
+        let(:conf_file) { "#{CONF_DIR6}/http_check.d/conf.yaml" }
       end
 
       it { should compile.with_all_deps }
       it { should contain_file(conf_file).with(
-        owner: dd_user,
-        group: dd_group,
-        mode: '0600',
+        owner: DD_USER,
+        group: DD_GROUP,
+        mode: PERMISSIONS_PROTECTED_FILE,
       )}
-      it { should contain_file(conf_file).that_requires("Package[#{dd_package}]") }
-      it { should contain_file(conf_file).that_notifies("Service[#{dd_service}]") }
+      it { should contain_file(conf_file).that_requires("Package[#{PACKAGE_NAME}]") }
+      it { should contain_file(conf_file).that_notifies("Service[#{SERVICE_NAME}]") }
 
       context 'with default parameters' do
         it { should contain_file(conf_file).without_content(%r{name: }) }
@@ -38,9 +25,11 @@ describe 'datadog_agent::integrations::http_check' do
         it { should contain_file(conf_file).without_content(%r{username: }) }
         it { should contain_file(conf_file).without_content(%r{password: }) }
         it { should contain_file(conf_file).without_content(%r{timeout: 1}) }
+        it { should contain_file(conf_file).without_content(%r{data: }) }
         it { should contain_file(conf_file).without_content(%{threshold: }) }
         it { should contain_file(conf_file).without_content(%r{window: }) }
         it { should contain_file(conf_file).without_content(%r{content_match: }) }
+        it { should contain_file(conf_file).without_content(%r{reverse_content_match: true}) }
         it { should contain_file(conf_file).without_content(%r{include_content: true}) }
         it { should contain_file(conf_file).without_content(%r{collect_response_time: true}) }
         it { should contain_file(conf_file).without_content(%r{http_response_status_code: }) }
@@ -61,9 +50,12 @@ describe 'datadog_agent::integrations::http_check' do
           username: 'foouser',
           password: 'barpassword',
           timeout: 123,
+          method: 'post',
+          data: 'key=value',
           threshold: 456,
           window: 789,
           content_match: 'foomatch',
+          reverse_content_match: true,
           include_content: true,
           collect_response_time: false,
           disable_ssl_validation: true,
@@ -82,9 +74,12 @@ describe 'datadog_agent::integrations::http_check' do
         it { should contain_file(conf_file).with_content(%r{username: foouser}) }
         it { should contain_file(conf_file).with_content(%r{password: barpassword}) }
         it { should contain_file(conf_file).with_content(%r{timeout: 123}) }
+        it { should contain_file(conf_file).with_content(%r{method: post}) }
+        it { should contain_file(conf_file).with_content(%r{data: key=value}) }
         it { should contain_file(conf_file).with_content(%r{threshold: 456}) }
         it { should contain_file(conf_file).with_content(%r{window: 789}) }
         it { should contain_file(conf_file).with_content(%r{content_match: 'foomatch'}) }
+        it { should contain_file(conf_file).with_content(%r{reverse_content_match: true}) }
         it { should contain_file(conf_file).with_content(%r{include_content: true}) }
         it { should contain_file(conf_file).without_content(%r{collect_response_time: true}) }
         it { should contain_file(conf_file).with_content(%r{disable_ssl_validation: true}) }
@@ -96,6 +91,19 @@ describe 'datadog_agent::integrations::http_check' do
         it { should contain_file(conf_file).with_content(%r{days_critical: 7}) }
         it { should contain_file(conf_file).with_content(%r{allow_redirects: true}) }
         it { should contain_file(conf_file).with_content(%r{ca_certs: /dev/null}) }
+      end
+
+      context 'with json post data' do
+        let(:params) {{
+          sitename: 'foo.bar.baz',
+          url: 'http://foo.bar.baz:4096',
+          method: 'post',
+          data: ['key: value'],
+          headers: ['Content-Type: application/json'],
+        }}
+        it { should contain_file(conf_file).with_content(%r{method: post}) }
+        it { should contain_file(conf_file).with_content(/data:\s+key:\s+value/) }
+        it { should contain_file(conf_file).with_content(/headers:\s+Content-Type:\s+application\/json/) }
       end
 
       context 'with headers parameter array' do

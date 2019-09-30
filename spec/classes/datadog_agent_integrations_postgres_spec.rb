@@ -1,30 +1,17 @@
 require 'spec_helper'
 
 describe 'datadog_agent::integrations::postgres' do
-  context 'supported agents - v5 and v6' do
-    agents = { '5' => true, '6' => false }
-    agents.each do |_, enabled|
-      let(:pre_condition) { "class {'::datadog_agent': agent5_enable => #{enabled}}" }
-      let(:facts) {{
-        operatingsystem: 'Ubuntu',
-      }}
-      if enabled
-        let(:conf_dir) { '/etc/dd-agent/conf.d' }
+  context 'supported agents' do
+    ALL_SUPPORTED_AGENTS.each do |_, is_agent5|
+      let(:pre_condition) { "class {'::datadog_agent': agent5_enable => #{is_agent5}}" }
+      if is_agent5
+        let(:conf_file) { "/etc/dd-agent/conf.d/postgres.yaml" }
       else
-        let(:conf_dir) { '/etc/datadog-agent/conf.d' }
-      end
-      let(:dd_user) { 'dd-agent' }
-      let(:dd_group) { 'root' }
-      let(:dd_package) { 'datadog-agent' }
-      let(:dd_service) { 'datadog-agent' }
-      if enabled
-        let(:conf_file) { "#{conf_dir}/postgres.yaml" }
-      else
-        let(:conf_file) { "#{conf_dir}/postgres.d/conf.yaml" }
+        let(:conf_file) { "#{CONF_DIR6}/postgres.d/conf.yaml" }
       end
 
       context 'with default parameters' do
-        it { should_not compile }
+        it { should compile }
       end
 
       context 'with password set' do
@@ -34,12 +21,12 @@ describe 'datadog_agent::integrations::postgres' do
 
         it { should compile.with_all_deps }
         it { should contain_file(conf_file).with(
-          owner: dd_user,
-          group: dd_group,
-          mode: '0600',
+          owner: DD_USER,
+          group: DD_GROUP,
+          mode: PERMISSIONS_PROTECTED_FILE,
         )}
-        it { should contain_file(conf_file).that_requires("Package[#{dd_package}]") }
-        it { should contain_file(conf_file).that_notifies("Service[#{dd_service}]") }
+        it { should contain_file(conf_file).that_requires("Package[#{PACKAGE_NAME}]") }
+        it { should contain_file(conf_file).that_notifies("Service[#{SERVICE_NAME}]") }
         it { should contain_file(conf_file).with_content(/password: abc123/) }
 
         context 'with default parameters' do
@@ -48,11 +35,35 @@ describe 'datadog_agent::integrations::postgres' do
           it { should contain_file(conf_file).with_content(%r{port: 5432}) }
           it { should contain_file(conf_file).with_content(%r{username: datadog}) }
           it { should contain_file(conf_file).without_content(%r{^\s*use_psycopg2: }) }
+          it { should contain_file(conf_file).with_content(%r{collect_function_metrics: false}) }
+          it { should contain_file(conf_file).with_content(%r{collect_count_metrics: false}) }
+          it { should contain_file(conf_file).with_content(%r{collect_activity_metrics: false}) }
+          it { should contain_file(conf_file).with_content(%r{collect_database_size_metrics: false}) }
+          it { should contain_file(conf_file).with_content(%r{collect_default_database: false}) }
           it { should contain_file(conf_file).without_content(%r{tags: })}
           it { should contain_file(conf_file).without_content(%r{^[^#]*relations: }) }
         end
 
-        context 'with use_psycopg2 enabled' do
+        context 'with extra metrics collection is_agent5' do
+          let(:params) {{
+            password: 'abc123',
+            collect_function_metrics: true,
+            collect_count_metrics: true,
+            collect_activity_metrics: true,
+            collect_database_size_metrics: true,
+            collect_default_database: true,
+          }}
+          it {
+            should contain_file(conf_file)
+              .with_content(%r{collect_function_metrics: true})
+              .with_content(%r{collect_count_metrics: true})
+              .with_content(%r{collect_activity_metrics: true})
+              .with_content(%r{collect_database_size_metrics: true})
+              .with_content(%r{collect_default_database: true})
+          }
+        end
+
+        context 'with use_psycopg2 is_agent5' do
           let(:params) {{
             use_psycopg2: true,
             password: 'abc123',
@@ -120,8 +131,8 @@ describe 'datadog_agent::integrations::postgres' do
             it { should contain_file(conf_file).with_content(%r{\s+query:\s*['"]?select foo, %s from bar['"]?}) }
             it { should contain_file(conf_file).with_content(%r{\s+metrics:}) }
             it { should contain_file(conf_file).with_content(%r{\s+"gooo":\s+\[custom_metric.tag.gooo, GAUGE\]}) }
-            it { should contain_file(conf_file).with_content(%r{\s+query.*\n\s+relation:\s*false}) }
-            it { should contain_file(conf_file).with_content(%r{\s+descriptors.*\n\s+-\s+\[foo, custom_metric.tag.foo\]}) }
+            it { should contain_file(conf_file).with_content(%r{\s+query.*[\r\n]+\s+relation:\s*false}) }
+            it { should contain_file(conf_file).with_content(%r{\s+descriptors.*[\r\n]+\s+-\s+\[foo, custom_metric.tag.foo\]}) }
           end
         end
       end

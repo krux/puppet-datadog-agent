@@ -39,10 +39,20 @@ class datadog_agent::integrations::dns_check (
 
   $legacy_dst = "${datadog_agent::conf_dir}/dns_check.yaml"
   if !$::datadog_agent::agent5_enable {
-    $dst = "${datadog_agent::conf6_dir}/dns_check.d/conf.yaml"
+    $dst_dir = "${datadog_agent::conf6_dir}/dns_check.d"
     file { $legacy_dst:
       ensure => 'absent'
     }
+
+    file { $dst_dir:
+      ensure  => directory,
+      owner   => $datadog_agent::params::dd_user,
+      group   => $datadog_agent::params::dd_group,
+      mode    => $datadog_agent::params::permissions_directory,
+      require => Package[$datadog_agent::params::package_name],
+      notify  => Service[$datadog_agent::params::service_name]
+    }
+    $dst = "${dst_dir}/conf.yaml"
   } else {
     $dst = $legacy_dst
   }
@@ -51,7 +61,7 @@ class datadog_agent::integrations::dns_check (
     ensure  => file,
     owner   => $datadog_agent::params::dd_user,
     group   => $datadog_agent::params::dd_group,
-    mode    => '0600',
+    mode    => $datadog_agent::params::permissions_protected_file,
     content => template('datadog_agent/agent-conf.d/dns_check.yaml.erb'),
     require => Package[$datadog_agent::params::package_name],
     notify  => Service[$datadog_agent::params::service_name],
