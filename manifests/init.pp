@@ -314,6 +314,7 @@ class datadog_agent(
   Optional[String] $service_provider = undef,
   Optional[String] $agent_version = $datadog_agent::params::agent_version,
   Array[String] $check_environments = ['production'],
+  Optional[Stdlib::Absolutepath] $reports_secret_backend_command = undef,
 ) inherits datadog_agent::params {
 
   # Allow ports to be passed as integers or strings.
@@ -685,6 +686,7 @@ class datadog_agent(
       dogapi_version            => $datadog_agent::params::dogapi_version,
       puppetmaster_user         => $puppetmaster_user,
       hostname_extraction_regex => $hostname_extraction_regex,
+      secret_backend_command    => $reports_secret_backend_command,
     }
   }
 
