@@ -21,7 +21,7 @@ def get_secret(secret_name, secret_backend_command)
   end
 
   stdout, stderr, status = Open3.capture3(secret_backend_command, stdin_data: secret_payload)
-  secret_json = JSON.parse(stdout))
+  secret_json = JSON.parse(stdout)
 
   # Return the returned secret
   secret_json[secret_name]['value']
