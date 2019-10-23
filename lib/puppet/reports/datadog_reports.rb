@@ -39,7 +39,7 @@ Puppet::Reports.register_report(:datadog_reports) do
     end
 
     secret_name = config[:datadog_api_key].gsub(/(^ENC\[|\]$)/, '')
-    API_KEY = get_secret(secret_name, secret_backend_command)
+    API_KEY = get_secret(secret_name, config[:secret_backend_command])
   else
     API_KEY = config[:datadog_api_key]
   end
