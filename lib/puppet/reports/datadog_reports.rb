@@ -12,7 +12,7 @@ def get_secret(secret_name)
   # Need to load the agent config to get the secret backend executable
   agent_config = YAML.load_file('/etc/datadog-agent/datadog.yaml')
   if agent_config['secret_backend_command']
-    secret_executable = agent_config['secret_backend_command']
+    secret_backend_command = agent_config['secret_backend_command']
     secret_payload = {
       "version": "1.0",
       "secrets": [secret_name]
