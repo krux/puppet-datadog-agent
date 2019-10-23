@@ -20,6 +20,7 @@ class datadog_agent::reports(
   $check_environments,
   $hostname_extraction_regex = undef,
   $datadog_site = 'datadoghq.com',
+  $secret_backend_command = undef,
 ) {
 
   include datadog_agent

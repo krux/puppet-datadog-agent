@@ -12,3 +12,6 @@
   - <%= environment %>
 <% end %>
 <% end -%>
+<% if @secret_backend_command -%>
+:secret_backend_command: '<%= @secret_backend_command %>'
+<% end -%>
