@@ -1,6 +1,7 @@
 require 'puppet'
 require 'yaml'
 require 'json'
+require 'open3'
 
 begin
   require 'dogapi'
@@ -19,7 +20,8 @@ def get_secret(secret_name, secret_backend_command)
     raise(Puppet::ParseError, "Datadog report API key is configured to use a secret but secret_backend_command not set in datadog.yaml")
   end
 
-  secret_json = JSON.parse(%x(echo #{secret_payload} | #{secret_backend_command}))
+  stdout, stderr, status = Open3.capture3(secret_backend_command, stdin_data: secret_payload)
+  secret_json = JSON.parse(stdout))
 
   # Return the returned secret
   secret_json[secret_name]['value']
