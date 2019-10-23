@@ -10,14 +10,13 @@ rescue LoadError => e
 end
 
 def get_secret(secret_name, secret_backend_command)
-  # Need to load the agent config to get the secret backend executable
   if ! secret_backend_command.nil?
     secret_payload = {
       "version": "1.0",
       "secrets": [secret_name]
     }.to_json
   else
-    raise(Puppet::ParseError, "Datadog report API key is configured to use a secret but secret_backend_command not set in datadog.yaml")
+    raise(Puppet::ParseError, "Datadog report API key is configured to use a secret but secret_backend_command not set in datadog-reports.yaml")
   end
 
   stdout, stderr, status = Open3.capture3(secret_backend_command, stdin_data: secret_payload)
