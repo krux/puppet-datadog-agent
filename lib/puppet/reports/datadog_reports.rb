@@ -8,11 +8,9 @@ rescue LoadError => e
   Puppet.info "You need the `dogapi` gem to use the Datadog report (run puppet with puppet_run_reports on your master)"
 end
 
-def get_secret(secret_name)
+def get_secret(secret_name, secret_backend_command)
   # Need to load the agent config to get the secret backend executable
-  agent_config = YAML.load_file('/etc/datadog-agent/datadog.yaml')
-  if agent_config['secret_backend_command']
-    secret_backend_command = agent_config['secret_backend_command']
+  if ! secret_backend_command.nil?
     secret_payload = {
       "version": "1.0",
       "secrets": [secret_name]
@@ -36,8 +34,12 @@ Puppet::Reports.register_report(:datadog_reports) do
   # Add support for secrets management: https://docs.datadoghq.com/agent/guide/secrets-management/?tab=linux
   if config[:datadog_api_key] =~ /^ENC\[/
     # Secret management is enabled. Parse the secret name so we can look it up the way datadog agent does
+    unless config[:secret_backend_command]
+      raise(Puppet::ParseError, "Datadog report API key is configured to use a secret but secret_backend_command not set in datadog-reports.yaml")
+    end
+
     secret_name = config[:datadog_api_key].gsub(/(^ENC\[|\]$)/, '')
-    API_KEY = get_secret(secret_name)
+    API_KEY = get_secret(secret_name, config[:secret_backend_command])
   else
     API_KEY = config[:datadog_api_key]
   end
