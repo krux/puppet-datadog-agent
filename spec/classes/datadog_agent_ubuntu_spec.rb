@@ -101,10 +101,6 @@ describe 'datadog_agent::ubuntu::agent6' do
 
   # it should install the packages
   it do
-    should contain_exec('apt-transport-https')\
-      .that_comes_before('file[/etc/apt/sources.list.d/datadog6.list]')
-  end
-  it do
     should contain_package('datadog-agent-base')\
       .with_ensure('absent')\
       .that_comes_before('package[datadog-agent]')
